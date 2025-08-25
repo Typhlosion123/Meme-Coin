@@ -114,7 +114,7 @@ async def scrape_memecoin():
         columns=["user", "ID", "text", "time", "replies", "views", "favorite count", "hashtags", "media"]
     )
     df.to_csv("memecoin_tweets.csv", index=False)
-    print("✅ Saved to memecoin_tweets.csv")
+    print("Saved to memecoin_tweets.csv")
 
 # Run the async function
 if __name__ == "__main__":

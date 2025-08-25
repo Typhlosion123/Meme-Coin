@@ -1,59 +1,62 @@
 import pandas as pd
 import os
 
-def merge_sentiment_data(main_file: str, sentiment_file: str, output_file: str):
+def merge_all_data(main_file: str, reddit_file: str, twitter_file: str, output_file: str):
     """
-    Merges sentiment scores from one CSV into another based on a common 'Date' column.
+    Merges sentiment scores from Reddit and reformatted Twitter CSVs into a main data CSV.
 
     Args:
-        main_file (str): Path to the main CSV file.
-        sentiment_file (str): Path to the CSV file containing sentiment scores.
+        main_file (str): Path to the main data CSV.
+        reddit_file (str): Path to the Reddit sentiment CSV.
+        twitter_file (str): Path to the Twitter sentiment CSV.
         output_file (str): Path for the new, merged CSV file.
     """
-    # --- Step 1: Read both CSV files ---
+    # --- Step 1: Read all three CSV files ---
     try:
         main_df = pd.read_csv(main_file)
-        sentiment_df = pd.read_csv(sentiment_file)
-        print(f"\nSuccessfully loaded '{main_file}' and '{sentiment_file}'.")
+        reddit_df = pd.read_csv(reddit_file)
+        twitter_df = pd.read_csv(twitter_file)
+        print(f"\nSuccessfully loaded all source files.")
     except FileNotFoundError as e:
         print(f"Error: Could not find a required file. {e}")
         return
-    
-    # --- Step 2: Ensure 'Date' columns are in datetime format for accurate matching ---
+
+    # --- Step 2: Ensure all 'Date' columns are in a consistent datetime format ---
+    # Pandas can typically infer the 'M/D/YYYY' format automatically.
     main_df['Date'] = pd.to_datetime(main_df['Date'])
-    sentiment_df['Date'] = pd.to_datetime(sentiment_df['Date'])
+    reddit_df['Date'] = pd.to_datetime(reddit_df['Date'])
+    twitter_df['Date'] = pd.to_datetime(twitter_df['Date'])
 
-    # --- Step 3: Aggregate sentiment scores by date ---
-    # If a date has multiple entries in the sentiment file, sum their scores.
-    print("Aggregating sentiment scores by date...")
-    sentiment_agg = sentiment_df.groupby('Date')['weighted_sentiment_score'].sum().reset_index()
+    # --- Step 3: Aggregate scores from both sentiment files ---
+    print("Aggregating sentiment scores by date...") 
+    reddit_agg = reddit_df.groupby('Date')['weighted_sentiment_score'].sum().reset_index()
+    twitter_agg = twitter_df.groupby('Date')['final_weighted_score'].sum().reset_index()
     
-    # Rename the column to avoid conflicts during the merge if it already exists
-    sentiment_agg.rename(columns={'weighted_sentiment_score': 'new_sentiment_score'}, inplace=True)
+    # Rename columns to avoid conflicts and for clarity
+    reddit_agg.rename(columns={'weighted_sentiment_score': 'reddit_sentiment_score'}, inplace=True)
+    twitter_agg.rename(columns={'final_weighted_score': 'twitter_sentiment_score'}, inplace=True)
 
-    # --- Step 4: Merge the main data with the aggregated sentiment data ---
-    # A 'left' merge keeps all rows from the main_df and adds data where dates match.
-    print("Merging dataframes on 'Date' column...")
-    merged_df = pd.merge(main_df, sentiment_agg, on='Date', how='left')
+    # --- Step 4: Merge all dataframes together ---
+    print("Merging dataframes...")
+    # First, merge main with Reddit data
+    merged_df = pd.merge(main_df, reddit_agg, on='Date', how='left')
+    # Then, merge the result with Twitter data
+    merged_df = pd.merge(merged_df, twitter_agg, on='Date', how='left')
 
-    # --- Step 5: Combine new scores with existing scores ---
-    # If the main file already has a 'weighted_sentiment_score' column, add the new scores.
-    # Otherwise, create the column from the new scores.
-    if 'weighted_sentiment_score' in merged_df.columns:
-        print("Existing 'weighted_sentiment_score' column found. Adding new scores to it.")
-        # Fill NaN values with 0 for both columns before adding them together
-        merged_df['weighted_sentiment_score'] = merged_df['weighted_sentiment_score'].fillna(0) + merged_df['new_sentiment_score'].fillna(0)
-    else:
-        print("No existing 'weighted_sentiment_score' column found. Creating it.")
-        merged_df['weighted_sentiment_score'] = merged_df['new_sentiment_score'].fillna(0)
+    # --- Step 5: Finalize sentiment score columns ---
+    print("Finalizing sentiment score columns...")
+    # Fill any dates that didn't have sentiment data with 0
+    merged_df['reddit_sentiment_score'] = merged_df['reddit_sentiment_score'].fillna(0)
+    merged_df['twitter_sentiment_score'] = merged_df['twitter_sentiment_score'].fillna(0)
     
-    # Drop the temporary 'new_sentiment_score' column
-    merged_df.drop(columns=['new_sentiment_score'], inplace=True)
-
-    # --- Step 6: Save the result to a new CSV file ---
+    # --- Step 6: Save the result ---
     try:
+        # Create output directory if it doesn't exist
+        output_dir = os.path.dirname(output_file)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
         merged_df.to_csv(output_file, index=False)
-        print(f"\n✅ Successfully merged data and saved to '{output_file}'.")
+        print(f"\nSuccessfully merged data and saved to '{output_file}'.")
     except Exception as e:
         print(f"An error occurred while saving the file: {e}")
 
@@ -61,17 +64,16 @@ def merge_sentiment_data(main_file: str, sentiment_file: str, output_file: str):
 # --- Main execution block ---
 if __name__ == "__main__":
     # Define the file paths
-    main_csv_path = 'coin_data/doge_data.csv'
-    sentiment_csv_path = 'reddit_data/doge_reddit_data.csv'
-    output_csv_path = 'training_data/doge.csv'
+    COIN_NAME = "bitcoin"
+    main_csv_path = f'coin_data/{COIN_NAME}_data.csv'
+    reddit_csv_path = f'reddit_data/{COIN_NAME}_reddit_data.csv'
+    twitter_reformatted_path = f'twitter_data/{COIN_NAME}_twitter_data.csv'
+    output_csv_path = f'training_data/{COIN_NAME}_final.csv'
 
     # Run the main merging function
-    merge_sentiment_data(
+    merge_all_data(
         main_file=main_csv_path,
-        sentiment_file=sentiment_csv_path,
+        reddit_file=reddit_csv_path,
+        twitter_file=twitter_reformatted_path,
         output_file=output_csv_path
     )
-
-    # You can uncomment the line below to see the final DataFrame in the console.
-    # print("\n--- Content of the final merged file ---")
-    # print(pd.read_csv(output_csv_path))

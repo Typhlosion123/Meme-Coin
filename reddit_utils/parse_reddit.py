@@ -3,7 +3,7 @@ import os
 
 def filter_csv_for_doge(file_path: str, coin_name: str):
     """
-    Reads a CSV file, filters it to keep only rows containing the word "doge"
+    Reads a CSV file, filters it to keep only rows containing the word coin name
     (case-insensitive) in any cell, and saves the result back to the same file.
 
     Args:
@@ -56,12 +56,8 @@ def filter_csv_for_doge(file_path: str, coin_name: str):
 if __name__ == "__main__":
     # Define the path to your CSV file here.
     # We'll use a sample file for this example.
-    csv_file_path = f"reddit_data/doge_reddit_data.csv"
+    csv_file_path = f"reddit_data/bitcoin_reddit_data.csv"
     
     print("\n--- Starting Filter Process ---")
     # Run the filtering function on the specified file
-    filter_csv_for_doge(csv_file_path, "doge")
-
-    # You can uncomment the line below to see the content of the modified file
-    # print("\n--- Content of the file after filtering ---")
-    # print(pd.read_csv(csv_file_path))
+    filter_csv_for_doge(csv_file_path, "Bitcoin")

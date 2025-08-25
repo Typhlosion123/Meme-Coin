@@ -111,10 +111,8 @@ def process_reddit_csv_weighted(file_path: str):
 # --- Main execution block ---
 if __name__ == "__main__":
     # Define the path for the CSV file.
-    csv_file_path = "reddit_data/doge_reddit_data.csv"
+    csv_file_path = "reddit_data/bitcoin_reddit_data.csv"
 
-    # This script assumes the file already exists. If not, you would create it
-    # with your data scraping process.
     if not os.path.exists(csv_file_path):
         print(f"Error: File not found at '{csv_file_path}'. Please ensure the file exists before running analysis.")
     else:

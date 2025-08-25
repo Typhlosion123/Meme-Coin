@@ -2,3 +2,11 @@
 .venv/
 __pychache__
 .env
+
+reddit_data/
+training_data/
+twitter_data/
+coin_data/
+
+
+coin_gecko_list.py

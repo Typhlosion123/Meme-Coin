@@ -7,14 +7,11 @@ import os
 import pandas as pd # Import pandas
 
 # --- Configuration ---
-COIN_ID = "doge" # CoinGecko ID for Bonk Coin (changed from MOG)
+COIN_ID = "bitcoin" # CoinGecko ID for Bonk Coin (changed from MOG)
 DAYS_HISTORY = 365   # Get 365 days of historical data (max for free tier daily granularity)
 DELAY_BETWEEN_REQUESTS_SECONDS = 2 # Delay between API calls to respect rate limits
 
-# IMPORTANT: Your CoinGecko Demo API Key
-# Get it from: https://www.coingecko.com/en/api/pricing
-# COINGECKO_API_KEY = os.environ.get("COINGECKO_API_KEY") # Recommended: set as environment variable
-COINGECKO_API_KEY = 'CG-KMG64PJKbKMS9G4asEMsgSho' # User provided key
+COINGECKO_API_KEY = os.getenv('COIN_GECKO') # User provided key
 
 if not COINGECKO_API_KEY:
     print("ERROR: CoinGecko API Key not found!")
@@ -91,18 +88,18 @@ def add_price_movement_label(csv_path, output_path):
         if pd.isna(row['next_day_price']):
             return 'N/A'  # No next day
         elif row['next_day_price'] > row['price']:
-            return 'up'
+            return 1
         elif row['next_day_price'] < row['price']:
-            return 'down'
+            return 0
         else:
-            return 'same'
+            return ''
 
     df['next_day_movement'] = df.apply(label_change, axis=1)
 
     # Drop helper column and save result
     df.drop(columns=['next_day_price'], inplace=True)
     df.to_csv(output_path, index=False)
-    print(f"✅ Updated CSV saved to {output_path}")
+    print(f"Updated CSV saved to {output_path}")
 
 # --- Main Execution ---
 if __name__ == "__main__":
@@ -150,7 +147,6 @@ if __name__ == "__main__":
     # --- Merge DataFrames ---
     # Merge on the 'date' index. An outer merge ensures all dates are kept,
     # filling with NaN where data might be missing from one source.
-    # Given CoinGecko's daily granularity for >90 days, alignment should be good.
     print("Merging DataFrames...")
     df_combined = pd.merge(df_market, df_ohlc, left_index=True, right_index=True, how='outer')
 
